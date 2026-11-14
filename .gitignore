@@ -8,4 +8,14 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Secrets and personal data: never commit
 .env
+.secrets/
+groups.json
+
+# Generated calendar files
+*.ics
+
+# Scratch files
+drafts/

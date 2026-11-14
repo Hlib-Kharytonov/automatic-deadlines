@@ -1,0 +1,140 @@
+[
+  {
+    "id": "e1",
+    "synthetic": false,
+    "from": "course teacher, UL2IN009 (via Moodle Sciences 2025)",
+    "date": "2026-05-04",
+    "subject": "[UL2IN009 - Introduction aux bases de données relationnelles - S2-25] Dates examen et consultation copies",
+    "body": "Bonjour,\nL'examen aura lieu le jeudi 28 mai de 16h30 à 18h30 (Salles: B1, B2, 34A, 34B).\nLa consultation de copies aura lieu le lundi 08 juin de 12h à 13h dans l'amphi A1. La consultation se finissant à 13h, aucune copie ne sera distribuée après 12h50, merci de prévoir votre arrivée en conséquence.\nCes informations se trouvent également sur Moodle dans la section Planning.\nCordialement\n[teacher]",
+    "expected": [
+      {
+        "course_code": "UL2IN009",
+        "name": "Introduction aux bases de données relationnelles",
+        "status": "scheduled",
+        "date": "2026-05-28",
+        "start": "16:30",
+        "end": "18:30"
+      }
+    ],
+    "notes": "The consultation de copies on 8 June is not an exam and must not be reported."
+  },
+  {
+    "id": "e2",
+    "synthetic": false,
+    "from": "language department, English UE (via Moodle Sciences 2025)",
+    "date": "2026-04-08",
+    "subject": "[Anglais - semestre 4 - S2-25] Convocation à l'examen d'anglais",
+    "body": "Bonjour,\nVous êtes convoqué(e) à l'épreuve finale de l'UE d'anglais LU2LVAN2; dans votre salle et créneau habituel. Le Jeudi 7 Mai 2026.\n- Vous devrez être muni(e) de votre carte d'étudiant ou une pièce d'identité officielle (Les Pass Navigo ne seront pas acceptés).\n- N'oubliez pas de signer la feuille d'émargement où se trouve également votre numéro d'anonymat à reporter sur votre copie.\nBien cordialement.\nLE DÉPARTEMENT DES LANGUES.",
+    "expected": [
+      {
+        "course_code": "LU2LVAN2",
+        "name": "Anglais (épreuve finale)",
+        "status": "time_unknown",
+        "date": "2026-05-07"
+      }
+    ],
+    "notes": "No time, only 'votre créneau habituel': report it, never create an event."
+  },
+  {
+    "id": "e3",
+    "synthetic": false,
+    "from": "teaching team, UL2IN013 groups 1 and 3 (via Moodle Sciences 2025)",
+    "date": "2026-03-24",
+    "subject": "[UL2IN013 - Projet de développement - S2-25] Rappel: Quizz ce jeudi groupes 1 et 3",
+    "body": "Bonjour,\nNous vous rappelons que ce jeudi aura lieu un Quizz sur la partie cours de l'UE (voir les slides disponibles sur le Moodle). Vous êtes attendu-e-s dans votre salle habituelle, le Quizz aura lieu sur Moodle.\nA jeudi\nL'équipe pédagogique des groupes 1 et 3",
+    "expected": [
+      {
+        "course_code": "UL2IN013",
+        "name": "Quizz Projet de développement",
+        "status": "time_unknown",
+        "date": "2026-03-26",
+        "groups": [
+          "1",
+          "3"
+        ]
+      }
+    ],
+    "notes": "Relative date: 'ce jeudi' counted from Tuesday 2026-03-24 is 2026-03-26. Only for groups 1 and 3, so the agent must ask my group for UL2IN013."
+  },
+  {
+    "id": "e4",
+    "synthetic": false,
+    "from": "course teacher, UL2IN003 (via Moodle Sciences 2025)",
+    "date": "2026-03-12",
+    "subject": "[UL2IN003 - Algorithmique 1 - S2-25] Nouvelle répartition : examen du jeudi 12 mars",
+    "body": "Bonjour à toutes et à tous,\nMerci de respecter impérativement l'affectation suivante pour l'examen d'Algorithmique qui a lieu ce soir à 18h15 :\n- Les étudiants qui bénéficient d'un tiers-temps (SHSE) devront venir composer dans la salle : 14.24.101\nPar ordre alphabétique :\n- Les étudiants dont les premières lettres du nom de famille sont comprises entre ABD et CHEN L. doivent composer en AMPHI.A1\n- Les étudiants dont les premières lettres du nom de famille sont comprises entre CHEN S. et KAN doivent composer en AMPHI.A2\n- Les étudiants dont les premières lettres du nom de famille sont comprises entre KEM et OUR doivent composer en AMPHI.A3\n- Les étudiants dont les premières lettres du nom de famille sont comprises entre PER et ZOU doivent composer en AMPHI.B1",
+    "expected": [
+      {
+        "course_code": "UL2IN003",
+        "name": "Algorithmique 1",
+        "status": "scheduled",
+        "date": "2026-03-12",
+        "start": "18:15",
+        "end": "20:15"
+      }
+    ],
+    "notes": "'ce soir' means the email's own date; the subject confirms jeudi 12 mars. No length given, so the 2h default applies. Rooms are v2."
+  },
+  {
+    "id": "e5",
+    "synthetic": true,
+    "from": "service des bourses, scolarité",
+    "date": "2026-02-10",
+    "subject": "Examen de votre dossier de bourse",
+    "body": "Bonjour,\nNous vous informons que l'examen de votre dossier de bourse sur critères sociaux est en cours. Une réponse vous sera communiquée avant le 15 mars.\nCordialement,\nLe service des bourses",
+    "expected": [],
+    "notes": "Trap: contains 'examen' and a date but is not an exam."
+  },
+  {
+    "id": "e6",
+    "synthetic": true,
+    "from": "course teacher, UL2XX001 (via Moodle Sciences 2025)",
+    "date": "2026-04-08",
+    "subject": "[UL2XX001 - Cours fictif A - S2-25] Report du CC1",
+    "body": "Bonjour,\nLe CC1 initialement prévu le mardi 14 avril est reporté au mardi 21 avril, de 10h45 à 12h15, même salle.\nCordialement",
+    "expected": [
+      {
+        "course_code": "UL2XX001",
+        "name": "CC1 Cours fictif A",
+        "status": "scheduled",
+        "date": "2026-04-21",
+        "start": "10:45",
+        "end": "12:15"
+      }
+    ],
+    "notes": "Reschedule: report only the new date. 14 April is the old date and must not appear."
+  },
+  {
+    "id": "e7",
+    "synthetic": true,
+    "from": "course teacher, UL2XX002 (via Moodle Sciences 2025)",
+    "date": "2026-04-07",
+    "subject": "[UL2XX002 - Cours fictif B - S2-25] CC2 pendant les TD",
+    "body": "Bonjour,\nLe CC2 aura lieu pendant la séance de TD de la semaine prochaine :\n- groupe 2 : mardi 14 avril de 10h45 à 11h45\n- groupe 4 : mercredi 15 avril de 14h à 15h\nBon courage",
+    "expected": [
+      {
+        "course_code": "UL2XX002",
+        "name": "CC2 Cours fictif B",
+        "status": "scheduled",
+        "date": "2026-04-14",
+        "start": "10:45",
+        "end": "11:45",
+        "groups": [
+          "2"
+        ]
+      },
+      {
+        "course_code": "UL2XX002",
+        "name": "CC2 Cours fictif B",
+        "status": "scheduled",
+        "date": "2026-04-15",
+        "start": "14:00",
+        "end": "15:00",
+        "groups": [
+          "4"
+        ]
+      }
+    ],
+    "notes": "Different times per group: the agent must call get_my_group for UL2XX002 and keep only my group's slot."
+  }
+]
