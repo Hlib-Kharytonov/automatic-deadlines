@@ -14,7 +14,8 @@ TOOL_DEFINITIONS = [
             "Search the student's mailbox. Returns up to 20 matching emails, newest first, "
             "each with id, sender, date, subject and a short snippet (not the full text). "
             "Words separated by spaces must all appear; put OR between alternatives, "
-            "e.g. 'partiel OR examen OR CC'. Matching ignores case and accents."
+            "e.g. 'partiel OR examen OR CC'. Matching ignores case and accents but "
+            "matches whole words only: 'CC' does not match 'CC1'."
         ),
         "input_schema": {
             "type": "object",

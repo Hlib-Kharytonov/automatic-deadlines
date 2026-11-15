@@ -26,12 +26,12 @@ uv run pytest          # run tests (once pytest is added as a dev dependency)
 
 ## Structure (planned parts marked)
 - `src/exam_agent/__init__.py`: `main()`, the `exam-agent` command.
-- `loop.py` (planned): the tool-use loop. It caps the number of rounds and prints every round.
-- `prompts.py` (planned): system prompt.
-- `tools.py` (planned): tool definitions and the name → function dispatch. Tools: `search_emails`, `read_email`, `get_my_group`, `report_exams`; later `list_calendar_events`, `create_calendar_event`.
-- `dates.py` (planned): builds real dates from the fields Claude extracts.
-- `mail/fake.py` / `mail/gmail.py` (planned): email backends with the same interface, so the loop doesn't change when switching from samples to Gmail.
-- `tests/fixtures/emails.json` (planned): anonymized sample emails with the expected exams.
+- `loop.py`: the tool-use loop. It caps the number of rounds and prints every round.
+- `prompts.py`: system prompt.
+- `tools.py`: tool definitions and the name → function dispatch. Tools: `search_emails`, `read_email`; planned `get_my_group`, `report_exams`; later `list_calendar_events`, `create_calendar_event`.
+- `dates.py`: builds real dates from the fields Claude extracts.
+- `mail/fake.py` / `mail/gmail.py` (Gmail planned): email backends with the same interface, so the loop doesn't change when switching from samples to Gmail.
+- `tests/fixtures/emails.json`: anonymized sample emails with the expected exams.
 
 ## Design rules
 - Claude extracts and explains; code computes. Claude returns raw fields (exam name, day, month, start time, end time if given, the quoted sentence) through `report_exams`. Code infers the year, sets the Europe/Paris time zone and detects duplicates.
@@ -54,8 +54,12 @@ Both are gitignored. Never put secrets in code or git, and check `git status` be
 Use `claude-haiku-5-5` for development.
 
 ## Working rules
+- At the end of each step, update PROGRESS.md (status, what was built, what was learned, next step) before committing.
 - For non-trivial tasks (several files, a new tool, a design change), ask clarifying questions and present a short plan before editing.
 - If important information is missing, ask instead of guessing.
 - When several approaches exist, explain the tradeoffs briefly with a practical example.
 - Be direct about problems and uncertainty.
 - Before calling a task done, run `uv run pytest` (once tests exist) and re-read the diff.
+
+## Progress
+@PROGRESS.md

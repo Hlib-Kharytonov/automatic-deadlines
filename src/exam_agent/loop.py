@@ -1,18 +1,23 @@
+from datetime import date
+
 import anthropic
 from dotenv import load_dotenv
+from exam_agent.prompts import build_system_prompt
 from exam_agent.tools import TOOL_DEFINITIONS, run_tool
 
 load_dotenv()
 client = anthropic.Anthropic()
 
 MAX_ROUNDS=10
-def run_agent(task: str, mailbox) -> str:
+def run_agent(task: str, mailbox, today: date | None = None) -> str:
+    system = build_system_prompt(today or date.today())
     messages=[{"role": "user", "content": task}]
-    
+
     for round_number in range(1, MAX_ROUNDS + 1):
         response=client.messages.create(
             model="claude-haiku-5-5",
             max_tokens=16000,
+            system=system,
             tools=TOOL_DEFINITIONS,
             messages=messages
             )

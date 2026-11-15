@@ -9,6 +9,6 @@ def main() -> None:
     from exam_agent.mail.fake import FakeMailbox
 
     mailbox = FakeMailbox(FIXTURES)
-    answer = run_agent("Find my upcoming exams in my email.", mailbox)
+    answer = run_agent("Find the exams announced in my email.", mailbox)
     print("\n=== Final answer ===")
     print(answer)
