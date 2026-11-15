@@ -9,13 +9,15 @@ MAX_ROUNDS=10
 def run_agent(task: str, mailbox) -> str:
     messages=[{"role": "user", "content": task}]
     
-    for _ in range(MAX_ROUNDS):
+    for round_number in range(1, MAX_ROUNDS + 1):
         response=client.messages.create(
             model="claude-haiku-5-5",
             max_tokens=16000,
             tools=TOOL_DEFINITIONS,
             messages=messages
             )
+        print(f"\n--- Round {round_number}: stop_reason={response.stop_reason}, "
+              f"tokens in/out={response.usage.input_tokens}/{response.usage.output_tokens}")
         messages.append({"role":"assistant","content":response.content})
 
         if response.stop_reason != "tool_use":
@@ -25,7 +27,7 @@ def run_agent(task: str, mailbox) -> str:
         results=[]
         for block in response.content:
             if block.type == "tool_use":
-                print(block.name, block.input)
+                print(f"  Claude asks: {block.name}({block.input})")
                 try:
                     content = run_tool(block.name,block.input,mailbox)
                     results.append({"type":"tool_result","tool_use_id": block.id, "content":content})
