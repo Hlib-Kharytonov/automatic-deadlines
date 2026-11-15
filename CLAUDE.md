@@ -28,7 +28,7 @@ uv run pytest          # run tests (once pytest is added as a dev dependency)
 - `src/exam_agent/__init__.py`: `main()`, the `exam-agent` command.
 - `loop.py`: the tool-use loop. It caps the number of rounds and prints every round.
 - `prompts.py`: system prompt.
-- `tools.py`: tool definitions and the name → function dispatch. Tools: `search_emails`, `read_email`; planned `get_my_group`, `report_exams`; later `list_calendar_events`, `create_calendar_event`.
+- `tools.py`: tool definitions and the name → function dispatch. Tools: `search_emails`, `read_email`, `report_exams` (with `process_report()`); planned `get_my_group`; later `list_calendar_events`, `create_calendar_event`.
 - `dates.py`: builds real dates from the fields Claude extracts.
 - `mail/fake.py` / `mail/gmail.py` (Gmail planned): email backends with the same interface, so the loop doesn't change when switching from samples to Gmail.
 - `tests/fixtures/emails.json`: anonymized sample emails with the expected exams.

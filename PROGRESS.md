@@ -5,9 +5,9 @@ Update this at the end of every step, before committing.
 
 ## Current status
 - **Phase:** 1a (sample emails → print exams in the terminal)
-- **Works:** the tool-use loop with `search_emails` and `read_email` over the fake mailbox, plus a system prompt. It finds all 6 sample exams and skips the scholarship email.
-- **Next step:** the `report_exams` tool, so Claude returns structured fields (including relative dates as weekday + "relative") instead of free text. Then `dates.py` turns them into real dates. Show the schema before writing it.
-- **After that:** `get_my_group` + `groups.json`, end-to-end test against `expected` in the sample emails, then phase 1b (Gmail).
+- **Works:** the loop with `search_emails`, `read_email` and `report_exams` over the fake mailbox. All 7 expected entries come out with correct dates and times (e7 gives one entry per group).
+- **Next step:** `get_my_group(course, options)` + `groups.json`, so only my group's slot is kept (e3, e7).
+- **After that:** an end-to-end test that compares the agent's output with `expected` in the sample emails, then phase 1b (Gmail).
 
 ## Log
 
@@ -32,3 +32,14 @@ Update this at the end of every step, before committing.
 - **Learned:**
   - System prompt = standing context and rules; the user message = this run's task. Rules about one tool go in that tool's description.
   - Remaining problems (Claude computed relative dates itself, listed both groups, free text with a miscount) can't be fixed by prompting alone. They need a structured output tool.
+
+### 2026-11-15: report_exams, structured output (step 3)
+- New tool `report_exams` (strict schema). Every field is required but nullable, so Claude must write `null` on purpose. Dates come as written: day/month, or weekday + `relative` ("ce jeudi" → `thursday` + `this`). Claude never calculates a date.
+- `process_report()` in `tools.py`: takes the email date from the mailbox (not from Claude), runs `resolve_date()` / `exam_times()`, sets `scheduled` or `time_unknown`. All or nothing: any bad exam rejects the whole report with one message listing every problem.
+- Loop, option A: a valid `report_exams` call ends the loop and returns the exams. Ending without it (or hitting `MAX_ROUNDS`) raises `AgentError`.
+- Result: 4 rounds, 7/7 entries correct.
+- **Learned:**
+  - An "output tool" turns the agent's answer into data: the last tool call *is* the result, and `strict: true` guarantees it matches the schema.
+  - Strict schemas allow `null`, `enum`, `anyOf`, but not `minimum`/`maximum`, so code still checks ranges.
+  - Self-correction: in the first run Claude wrote "16h30"; code rejected it with `is_error`, and Claude fixed all five times in the next round. Errors written *for Claude* are part of the prompt.
+  - The cause was my bug: merging dicts replaced the "HH:MM" hint in the field description. Once the description was fixed, the first report was accepted. Schema descriptions are prompts too.
