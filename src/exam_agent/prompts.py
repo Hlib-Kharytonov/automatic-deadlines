@@ -46,6 +46,9 @@ exams. That call is your answer; do not write a summary.
 - If the email gives no precise time (e.g. "dans votre créneau habituel",
   "pendant votre TD"), set start to null instead of guessing.
 - If an exam was moved, report only the new date.
+- If dates or times differ between groups, or an exam is only for some groups,
+  call get_my_group for that course before report_exams. Never guess the group.
+  Still report every group's slot; code keeps the student's.
 - A copy review ("consultation de copies") is not an exam.
 - Rooms are out of scope for now.
 </what_to_report>

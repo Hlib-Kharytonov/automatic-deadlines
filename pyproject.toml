@@ -23,3 +23,7 @@ build-backend = "uv_build"
 dev = [
     "pytest>=9.2.0",
 ]
+
+[tool.pytest.ini_options]
+markers = ["api: calls the real Claude API (costs money); run with -m api"]
+addopts = "-m 'not api'"

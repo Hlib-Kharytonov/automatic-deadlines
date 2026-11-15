@@ -21,15 +21,17 @@ Managed with [uv](https://docs.astral.sh/uv/), Python 3.14. The user's shell is 
 uv sync                # install deps from uv.lock
 uv run exam-agent      # run the agent (src/exam_agent:main)
 uv add <package>       # add a dependency
-uv run pytest          # run tests (once pytest is added as a dev dependency)
+uv run pytest          # run offline tests (free)
+uv run pytest -m api   # end-to-end test with the real API (costs a little)
 ```
 
 ## Structure (planned parts marked)
 - `src/exam_agent/__init__.py`: `main()`, the `exam-agent` command.
 - `loop.py`: the tool-use loop. It caps the number of rounds and prints every round.
 - `prompts.py`: system prompt.
-- `tools.py`: tool definitions and the name → function dispatch. Tools: `search_emails`, `read_email`, `report_exams` (with `process_report()`); planned `get_my_group`; later `list_calendar_events`, `create_calendar_event`.
+- `tools.py`: tool definitions and the name → function dispatch. Tools: `search_emails`, `read_email`, `get_my_group`, `report_exams` (with `process_report()`); later `list_calendar_events`, `create_calendar_event`.
 - `dates.py`: builds real dates from the fields Claude extracts.
+- `groups.py`: `GroupMemory`, my group per course in `groups.json`; asks in the terminal when unknown.
 - `mail/fake.py` / `mail/gmail.py` (Gmail planned): email backends with the same interface, so the loop doesn't change when switching from samples to Gmail.
 - `tests/fixtures/emails.json`: anonymized sample emails with the expected exams.
 

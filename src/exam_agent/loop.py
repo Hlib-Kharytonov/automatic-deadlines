@@ -14,8 +14,9 @@ class AgentError(Exception):
 
 
 MAX_ROUNDS=10
-def run_agent(task: str, mailbox, today: date | None = None) -> list[dict]:
-    """Run the tool-use loop. Returns the exams from the first valid report_exams call."""
+def run_agent(task: str, mailbox, groups, today: date | None = None) -> list[dict]:
+    """Run the tool-use loop. Returns the exams from the first valid report_exams call
+    (every group's slots; filter with groups.is_mine())."""
     system = build_system_prompt(today or date.today())
     messages=[{"role": "user", "content": task}]
 
@@ -45,7 +46,7 @@ def run_agent(task: str, mailbox, today: date | None = None) -> list[dict]:
             if block.name == FINAL_TOOL:
                 print(f"  Claude asks: {FINAL_TOOL}({len(block.input['exams'])} exams)")
                 try:
-                    exams = process_report(block.input["exams"], mailbox)
+                    exams = process_report(block.input["exams"], mailbox, groups)
                 except ValueError as error:
                     # Send the problems back; Claude re-reads and calls report_exams again.
                     print(f"  Rejected:\n{error}")
@@ -56,7 +57,7 @@ def run_agent(task: str, mailbox, today: date | None = None) -> list[dict]:
 
             print(f"  Claude asks: {block.name}({block.input})")
             try:
-                content = run_tool(block.name,block.input,mailbox)
+                content = run_tool(block.name,block.input,mailbox,groups)
                 results.append({"type":"tool_result","tool_use_id": block.id, "content":content})
             except ValueError as error:
                 results.append({"type":"tool_result","tool_use_id": block.id, "content":str(error),"is_error":True})

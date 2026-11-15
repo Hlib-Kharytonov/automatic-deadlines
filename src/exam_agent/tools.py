@@ -9,6 +9,7 @@ import json
 from datetime import date, timedelta
 
 from exam_agent.dates import WEEKDAYS, exam_times, resolve_date
+from exam_agent.groups import GroupMemory
 
 
 def _nullable(schema: dict) -> dict:
@@ -63,7 +64,10 @@ _EXAM_SCHEMA = {
         "groups": {
             "type": "array",
             "items": {"type": "string"},
-            "description": "Groups this slot is for, e.g. ['2']. Empty if it is for everyone.",
+            "description": (
+                "Groups this slot is for, short form, e.g. ['2'] or ['1', '3']. Empty if it is for everyone. "
+                "Report every group's slot, not only the student's; code keeps the right one."
+            ),
         },
         "quote": {"type": "string", "description": "The sentence that announces the exam, copied word for word"},
     },
@@ -110,6 +114,29 @@ TOOL_DEFINITIONS = [
         "strict": True,
     },
     {
+        "name": "get_my_group",
+        "description": (
+            "Return the student's group in one course. Call it whenever an email gives different "
+            "dates or times for different groups, or says an exam is only for some groups, before "
+            "calling report_exams. Never guess the group. If it isn't saved yet, the student is "
+            "asked; the answer may be a group that is not among the options."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "course_code": {"type": "string", "description": "Course code like UL2XX002"},
+                "options": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "The group labels the email mentions, short form, e.g. ['2', '4']",
+                },
+            },
+            "required": ["course_code", "options"],
+            "additionalProperties": False,
+        },
+        "strict": True,
+    },
+    {
         "name": "report_exams",
         "description": (
             "Report the exams you found. This is your final answer: call it exactly once, after "
@@ -133,7 +160,7 @@ TOOL_DEFINITIONS = [
 FINAL_TOOL = "report_exams"
 
 
-def run_tool(name: str, tool_input: dict, mailbox) -> str:
+def run_tool(name: str, tool_input: dict, mailbox, groups: GroupMemory | None = None) -> str:
     """Run one tool and return its result as a JSON string for Claude.
 
     Raises ValueError for bad input (unknown tool, unknown email id). The loop
@@ -143,20 +170,25 @@ def run_tool(name: str, tool_input: dict, mailbox) -> str:
         result = mailbox.search(tool_input["query"])
     elif name == "read_email":
         result = mailbox.read(tool_input["email_id"])
+    elif name == "get_my_group" and groups is not None:
+        course = tool_input["course_code"]
+        result = {"course_code": course, "my_group": groups.get_or_ask(course, tool_input["options"])}
     else:
         raise ValueError(f"Unknown tool {name!r}.")
     return json.dumps(result, ensure_ascii=False)
 
 
-def process_report(exams: list[dict], mailbox) -> list[dict]:
+def process_report(exams: list[dict], mailbox, groups: GroupMemory) -> list[dict]:
     """Turn report_exams input into exams with real dates.
 
-    All or nothing: if any exam fails, raise one ValueError listing every problem,
-    so Claude can fix them all in a single retry.
+    Returns every slot Claude reported, including other groups' slots; use
+    GroupMemory.is_mine() to keep mine. All or nothing: if any exam fails, raise
+    one ValueError listing every problem, so Claude can fix them all in one retry.
     """
     results, errors = [], []
     for number, exam in enumerate(exams, start=1):
         try:
+            _check_group_known(exam, groups)
             results.append(_process_exam(exam, mailbox))
         except ValueError as error:
             errors.append(f"- Exam {number} ({exam['exam_name']!r}, email {exam['email_id']}): {error}")
@@ -166,6 +198,19 @@ def process_report(exams: list[dict], mailbox) -> list[dict]:
             + "\n".join(errors)
         )
     return results
+
+
+def _check_group_known(exam: dict, groups: GroupMemory) -> None:
+    # Zero trust: code, not Claude, makes sure the group question was actually asked.
+    if not exam["groups"]:
+        return
+    if exam["course_code"] is None:
+        raise ValueError("This slot is for specific groups, so course_code is needed to look up my group.")
+    if groups.get(exam["course_code"]) is None:
+        raise ValueError(
+            f"This slot is for groups {exam['groups']}, but my group in {exam['course_code']} is unknown. "
+            "Call get_my_group first."
+        )
 
 
 def _process_exam(exam: dict, mailbox) -> dict:

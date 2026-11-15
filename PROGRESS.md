@@ -4,10 +4,9 @@ Where the project stands, what each step taught, and what comes next.
 Update this at the end of every step, before committing.
 
 ## Current status
-- **Phase:** 1a (sample emails → print exams in the terminal)
-- **Works:** the loop with `search_emails`, `read_email` and `report_exams` over the fake mailbox. All 7 expected entries come out with correct dates and times (e7 gives one entry per group).
-- **Next step:** `get_my_group(course, options)` + `groups.json`, so only my group's slot is kept (e3, e7).
-- **After that:** an end-to-end test that compares the agent's output with `expected` in the sample emails, then phase 1b (Gmail).
+- **Phase:** 1a done (sample emails → exams printed in the terminal, filtered to my groups). End-to-end test matches `expected` 7/7.
+- **Next step:** phase 1b, real Gmail: `mail/gmail.py` with the same `search()` / `read()` interface, `gmail.readonly` OAuth (I create the Google client ID and secret first).
+- **After that:** phase 2, write `.ics`.
 
 ## Log
 
@@ -43,3 +42,15 @@ Update this at the end of every step, before committing.
   - Strict schemas allow `null`, `enum`, `anyOf`, but not `minimum`/`maximum`, so code still checks ranges.
   - Self-correction: in the first run Claude wrote "16h30"; code rejected it with `is_error`, and Claude fixed all five times in the next round. Errors written *for Claude* are part of the prompt.
   - The cause was my bug: merging dicts replaced the "HH:MM" hint in the field description. Once the description was fixed, the first report was accepted. Schema descriptions are prompts too.
+
+### 2026-11-15: get_my_group + end-to-end test (step 4, phase 1a done)
+- `groups.py`: `GroupMemory` keyed by course code, saved in `groups.json` (gitignored). `get_or_ask()` asks in the terminal once and saves; `is_mine()` compares labels ("Groupe 2" == "2").
+- New tool `get_my_group(course_code, options)`. Claude still reports **every** group's slot; `main()` keeps mine with `is_mine()`.
+- Zero trust in code: `process_report` rejects a group-specific slot if my group for that course isn't saved ("Call get_my_group first").
+- `tests/test_agent_e2e.py`: runs the real agent and compares with `expected` (course, status, date, times, groups; names are free text and not compared). Marked `api`, skipped by default; run with `uv run pytest -m api`.
+- `main()` marks past exams with "(past)" (code decides what is upcoming).
+- **Learned:**
+  - A tool can ask the human (human-in-the-loop). To Claude it is just another tool result.
+  - "Claude asks, code enforces": the prompt says to call get_my_group, but `process_report` is what guarantees it.
+  - Inject what touches the outside world (`ask`, `mailbox`, `today`) so tests can replace it with fakes.
+  - Unit tests are free and deterministic; the API test costs money and can vary, so it is opt-in.
