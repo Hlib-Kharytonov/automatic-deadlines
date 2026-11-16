@@ -4,9 +4,9 @@ Where the project stands, what each step taught, and what comes next.
 Update this at the end of every step, before committing.
 
 ## Current status
-- **Phase:** 1b done (real Gmail → exams printed in the terminal).
-- **Next step:** phase 2, write the exams to an `.ics` file (only `scheduled` ones; `time_unknown` stays a notice).
-- **Known limits (accepted for now):** searches return at most 20 emails, newest first, from the last 6 months (`SEARCH_WINDOW` in `mail/gmail.py`), and Claude isn't told when a list was cut off. Fine for recent mail; revisit if a real exam is missed.
+- **Phase:** 2 done (exams written to `exams.ics`, imported by hand into any calendar app).
+- **Next step:** phase 3, Google Calendar API: list existing events, skip duplicates, create events only after my explicit "yes" (checked in code).
+- **Known limits (accepted for now):** searches return at most 20 emails, newest first, from the last 6 months (`SEARCH_WINDOW` in `mail/gmail.py`), and Claude isn't told when a list was cut off.
 
 ## Log
 
@@ -72,3 +72,13 @@ Update this at the end of every step, before committing.
 - **Learned:**
   - Check the agent's *inputs* (what the searches returned), not only its answer: a correct answer can hide a recall problem.
   - When a real email shows a new case, turn it into an anonymized sample with `expected`, so the behaviour is tested from then on.
+
+### 2026-11-16: .ics file (phase 2)
+- `calendar_file.py` with the `icalendar` library (handles escaping, line folding and the VTIMEZONE block). Only upcoming `scheduled` exams for my groups go in; `time_unknown` and past exams don't.
+- Each event: Paris times, title = exam type + course name, the quoted sentence in the description, a reminder 1 day before.
+- Stable UID from course + start (`ul2in010-20261130t1830@exam-agent`): re-importing updates the event instead of duplicating it.
+- `exam_name` description now asks for the exam type plus the course name: one real run gave just "CC1", a poor calendar title.
+- Real Gmail run: `exams.ics` with the CC1 UL2IN010 test exam, 30 Nov 18:30-20:30.
+- **Learned:**
+  - Not every step needs the model. The loop already returns checked data, so the output stage is plain, testable code.
+  - Field descriptions decide output quality: Claude's naming varied until the description said what a good title looks like.

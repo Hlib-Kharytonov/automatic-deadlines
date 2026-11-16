@@ -27,7 +27,13 @@ _EXAM_SCHEMA = {
         "course_code": _nullable(
             {"type": "string", "description": "Course code like UL2IN013, from the subject tag or the body"}
         ),
-        "exam_name": {"type": "string", "description": "Short name, e.g. 'CC1 Cours fictif A' or 'Algorithmique 1'"},
+        "exam_name": {
+            "type": "string",
+            "description": (
+                "Calendar title: the exam type plus the course name, without the course code, "
+                "e.g. 'CC1 Bases de données relationnelles' or 'Partiel Réseaux'"
+            ),
+        },
         "date": {
             "type": "object",
             "description": (

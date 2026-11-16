@@ -1,5 +1,5 @@
 import sys
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from exam_agent.groups import GroupMemory
@@ -8,6 +8,7 @@ from exam_agent.mail.fake import FakeMailbox
 PROJECT = Path(__file__).parents[2]
 FIXTURES = PROJECT / "tests" / "fixtures" / "emails.json"
 GROUPS_FILE = PROJECT / "groups.json"  # gitignored: personal data
+ICS_FILE = PROJECT / "exams.ics"  # gitignored: generated
 
 
 def main() -> None:
@@ -29,8 +30,9 @@ def main() -> None:
     run(mailbox, GroupMemory(GROUPS_FILE), date.today())
 
 
-def run(mailbox, groups: GroupMemory, today: date) -> None:
+def run(mailbox, groups: GroupMemory, today: date, ics_path: Path = ICS_FILE) -> None:
     # Imported here so that loading the package (e.g. in tests) doesn't create an API client.
+    from exam_agent.calendar_file import select_for_calendar, write_ics
     from exam_agent.loop import AgentError, run_agent
 
     try:
@@ -49,3 +51,8 @@ def run(mailbox, groups: GroupMemory, today: date) -> None:
         print(f"{exam['date']:%a %Y-%m-%d}  {when:<12}  {exam['course_code'] or '?':<9}  "
               f"{exam['exam_name']}{past}")
         print(f"    \"{exam['quote']}\"")
+
+    # Phase 2: the calendar file. Plain code, no AI: the data is already checked.
+    events = select_for_calendar(mine, today)
+    write_ics(events, ics_path, now=datetime.now(UTC))
+    print(f"\n{len(events)} upcoming exams written to {ics_path} (import it into your calendar app).")

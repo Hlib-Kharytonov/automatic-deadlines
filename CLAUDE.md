@@ -33,6 +33,7 @@ uv run pytest -m api   # end-to-end test with the real API (costs a little)
 - `tools.py`: tool definitions and the name → function dispatch. Tools: `search_emails`, `read_email`, `get_my_group`, `report_exams` (with `process_report()`); later `list_calendar_events`, `create_calendar_event`.
 - `dates.py`: builds real dates from the fields Claude extracts.
 - `groups.py`: `GroupMemory`, my group per course in `groups.json`; asks in the terminal when unknown.
+- `calendar_file.py`: writes upcoming scheduled exams to `exams.ics` (gitignored), Europe/Paris times, stable UIDs, 1-day reminder.
 - `mail/fake.py` / `mail/gmail.py`: email backends with the same interface, so the loop doesn't change when switching from samples to Gmail.
 - `tests/fixtures/emails.json`: anonymized sample emails with the expected exams.
 
