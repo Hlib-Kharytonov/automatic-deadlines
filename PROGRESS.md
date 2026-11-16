@@ -4,9 +4,9 @@ Where the project stands, what each step taught, and what comes next.
 Update this at the end of every step, before committing.
 
 ## Current status
-- **Phase:** 1a done (sample emails → exams printed in the terminal, filtered to my groups). End-to-end test matches `expected` 7/7.
-- **Next step:** phase 1b, real Gmail: `mail/gmail.py` with the same `search()` / `read()` interface, `gmail.readonly` OAuth (I create the Google client ID and secret first).
-- **After that:** phase 2, write `.ics`.
+- **Phase:** 1b done (real Gmail → exams printed in the terminal).
+- **Next step:** phase 2, write the exams to an `.ics` file (only `scheduled` ones; `time_unknown` stays a notice).
+- **Known limits (accepted for now):** searches return at most 20 emails, newest first, from the last 6 months (`SEARCH_WINDOW` in `mail/gmail.py`), and Claude isn't told when a list was cut off. Fine for recent mail; revisit if a real exam is missed.
 
 ## Log
 
@@ -54,3 +54,21 @@ Update this at the end of every step, before committing.
   - "Claude asks, code enforces": the prompt says to call get_my_group, but `process_report` is what guarantees it.
   - Inject what touches the outside world (`ask`, `mailbox`, `today`) so tests can replace it with fakes.
   - Unit tests are free and deterministic; the API test costs money and can vary, so it is opt-in.
+
+### 2026-11-15: Gmail backend (step 5, phase 1b started)
+- Chose Gmail over the university Zimbra (which forwards to Gmail): OAuth with `gmail.readonly` instead of storing the university password; read-only is enforced by Google, the token can be revoked.
+- `mail/gmail.py`: `GmailMailbox` with the same `search()` / `read()` as the fake. Searches add `newer_than:6m`; the email date is Gmail's receive time as a Paris date; HTML bodies become text; bodies over 20,000 characters are cut with a visible marker; an unknown id becomes a `ValueError` for Claude.
+- `main()`: Gmail by default, `--fake` for the sample emails. `.env.example` lists the secret names for a new machine.
+- `tests/test_gmail.py`: a stand-in for the Gmail API, so no network or account is needed.
+- **Learned:**
+  - Same interface, different backend: the loop, tools and checks did not change at all.
+  - Give the agent the smallest access that works. It reads untrusted text, so a read-only token is safer than a password.
+
+### 2026-11-16: First real Gmail run (phase 1b done)
+- OAuth set up (Desktop app, Testing mode, `gmail.readonly`). Token in `.secrets/gmail_token.json`.
+- Real run: 3 rounds, found the one exam with a fixed date (a test email: CC1 UL2IN010, 30 Nov 18:30, end defaulted to 20:30). Correctly skipped the Réseaux partiel ("pas avant le 30 novembre… rien n'est sûr") and the director's "aucun partiel/CC dans les 2 semaines".
+- Checked the searches by hand: the broad OR search hit the 20-result cap, more than half noise (Crous, insurance). Accepted for now (see Known limits).
+- Decision: an exam without a fixed date is not reported (rule in the prompt and CLAUDE.md). Locked in with sample email `e8` (`expected: []`); end-to-end test passes 8/8 emails.
+- **Learned:**
+  - Check the agent's *inputs* (what the searches returned), not only its answer: a correct answer can hide a recall problem.
+  - When a real email shows a new case, turn it into an anonymized sample with `expected`, so the behaviour is tested from then on.

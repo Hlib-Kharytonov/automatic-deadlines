@@ -11,7 +11,22 @@ GROUPS_FILE = PROJECT / "groups.json"  # gitignored: personal data
 
 
 def main() -> None:
-    run(FakeMailbox(FIXTURES), GroupMemory(GROUPS_FILE), date.today())
+    import argparse
+
+    from dotenv import load_dotenv
+
+    parser = argparse.ArgumentParser(description="Find exam announcements in my email.")
+    parser.add_argument("--fake", action="store_true", help="use the sample emails instead of Gmail")
+    args = parser.parse_args()
+
+    load_dotenv()  # before anything reads GOOGLE_* or creates the Anthropic client
+    if args.fake:
+        mailbox = FakeMailbox(FIXTURES)
+    else:
+        from exam_agent.mail.gmail import GmailMailbox
+
+        mailbox = GmailMailbox()
+    run(mailbox, GroupMemory(GROUPS_FILE), date.today())
 
 
 def run(mailbox, groups: GroupMemory, today: date) -> None:

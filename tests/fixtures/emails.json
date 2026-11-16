@@ -136,5 +136,15 @@
       }
     ],
     "notes": "Different times per group: the agent must call get_my_group for UL2XX002 and keep only my group's slot."
+  },
+  {
+    "id": "e8",
+    "synthetic": true,
+    "from": "Enseignant (via Moodle)",
+    "date": "2026-04-02",
+    "subject": "[UL2XX003 - Cours fictif C - S2-25] Programme de la semaine",
+    "body": "Bonjour à tous,\nLe TD 6 aura lieu en distanciel cette semaine.\nConcernant le partiel, il n'aura pas lieu avant le 20 avril (on parle du 27 avril, mais rien n'est sûr). Durée : 1h30. Je vous tiendrai au courant.\nBon week-end",
+    "expected": [],
+    "notes": "Date not fixed yet ('pas avant', 'rien n'est sûr'): not an exam to report. Modelled on a real email from Nov 2026."
   }
 ]
