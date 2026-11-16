@@ -1,219 +1,133 @@
 # exam-agent
 
-Finds exam announcements in your email and adds them to Google Calendar.
+An LLM agent that reads my university email, finds exam announcements, and adds them to my calendar after I confirm.
 
-French universities announce exams in free text, often in Moodle forum emails:
+## Why
 
-> Bonjour les étudiants, vous allez avoir votre première CC1 le 30 Novembre à 18h30
+French universities announce exams in free text, usually in Moodle emails:
 
-A keyword script can't reliably turn that into a calendar event, so exam-agent uses Claude to read the emails. Plain Python code then checks the result, computes the real dates and writes the calendar.
+- "L'examen aura lieu le jeudi 28 mai de 16h30 à 18h30 (Salles: B1, B2, 34A, 34B)."
+- "…l'examen d'Algorithmique qui a lieu ce soir à 18h15"
+- "Vous êtes convoqué(e) à l'épreuve finale… dans votre salle et créneau habituel."
 
-```
-$ uv run exam-agent
---- Round 1: stop_reason=tool_use, tokens in/out=2937/160
-  Claude asks: search_emails({'query': 'partiel OR examen OR CC1 OR quizz OR …'})
---- Round 2: stop_reason=tool_use, tokens in/out=7327/400
-  Claude asks: read_email({'email_id': '1a1e667f26db0662'})
---- Round 3: stop_reason=tool_use, tokens in/out=11383/397
-  Claude asks: report_exams(1 exams)
-
-=== 1 exams for me (0 other-group slots hidden) ===
-Mon 2026-11-30  18:30-20:30   UL2IN010   CC1 Introduction aux bases de données relationnelles
-    "vous allez avoir votre première CC1 le 30 Novembre à 18h30"
-
-1 upcoming exams written to exams.ics (import it into your calendar app).
-
-=== Google Calendar 'Exams': 1 new, 0 already there or deleted by you ===
-  Mon 30 Nov 18:30-20:30  CC1 Introduction aux bases de données relationnelles
-Add these 1 events to your 'Exams' calendar? [y/N] y
-Added 1 events.
-```
-
-Built as a learning project: the agent loop is hand-written with the Anthropic Python SDK, without agent frameworks.
-
-## What it does
-
-- Searches your Gmail (read-only) for exam announcements: partiel, examen, CC, quiz, contrôle, convocation…
-- Extracts the exam name, date and time, including relative dates such as "ce jeudi" or "ce soir", which are computed from the email's date.
-- Asks you which group you're in when an exam has different slots per group, and remembers the answer for each course.
-- Writes the upcoming exams to `exams.ics`, which any calendar app can import.
-- Adds them to a separate **"Exams"** Google Calendar, but only after you type `y`. Exams already in that calendar, or ones you deleted from it, are not offered again.
-
-**Left out on purpose:**
-- **No precise time** ("dans votre créneau habituel"): the exam is printed as a notice only, with no calendar event.
-- **No fixed date** ("pas avant le 30 novembre, rien n'est sûr"): not reported until an email fixes the date.
-- **Rooms:** not extracted yet.
+Dates are absolute, relative ("ce soir", "ce jeudi"), or missing a time. Exams sit next to copy reviews, postponements and per-group slots. A regex breaks on the next new phrasing. A language model reads these well, but I don't trust it with date arithmetic or with my calendar, so each side does the job it is good at.
 
 ## How it works
 
-```
-uv run exam-agent
-│
-├─ 1. FIND       Claude + tools, in a loop (the only part that uses AI)
-│                Gmail ─search/read─► Claude ─report_exams─► exams checked by code
-├─ 2. FILTER     code: keep my groups' slots, drop past exams and "time unknown"
-├─ 3. FILE       code: write exams.ics
-└─ 4. CALENDAR   code: compare with the Exams calendar, ask y/N, add new events
-```
+The agent is a loop of about 60 lines (`loop.py`). The model gets four tools and asks for one. My code runs it and sends the result back. This repeats until the model calls `report_exams` with a valid answer, or for at most 10 rounds.
 
-In stage 1, Claude can call four tools:
-
-| Tool | What it does |
+| Tool | Purpose |
 |---|---|
-| `search_emails(query)` | Gmail search; returns ids, subjects and snippets |
-| `read_email(email_id)` | Full text of one email |
-| `get_my_group(course_code, options)` | Your saved group for a course; asks you in the terminal if unknown |
-| `report_exams(exams)` | The final answer, with a strict schema. Code validates it; if something is wrong (an impossible date, a bad time format, an unknown group), the error goes back to Claude to fix. A valid report ends the loop. |
+| `search_emails`, `read_email` | Read-only access to the mailbox |
+| `get_my_group(course, options)` | Asks me once per course which group I'm in, and saves the answer |
+| `report_exams(exams)` | The final answer, with a strict schema. Code validates it and sends errors back. |
 
-Claude reports the date fields exactly as the email writes them. Code works out the year, the Paris time zone, the default length (2 hours when no end time is given) and the duplicates.
+After the loop, plain code filters by my groups, writes an `.ics` file, and offers to add new events to Google Calendar.
 
-### Safety
+A real run on the sample mailbox (the samples are from spring 2026, so every exam is past):
 
-| Risk | Protection |
+```
+--- Round 1: stop_reason=tool_use, tokens in/out=2958/160
+  Claude asks: search_emails({'query': 'partiel OR examen OR CC OR CC1 OR CC2 OR contrôle OR quiz OR quizz OR …'})
+  Claude asks: search_emails({'query': 'contrôle continu'})
+--- Round 2: stop_reason=tool_use, tokens in/out=4553/387
+  Claude asks: read_email({'email_id': 'e1'})   … and e2, e3, e4, e6, e7, e8
+--- Round 3: stop_reason=tool_use, tokens in/out=6954/707
+  Claude asks: get_my_group({'course_code': 'UL2XX002', 'options': ['2', '4']})
+  ? Which group are you in for UL2XX002?  Your group: 2
+  Claude asks: get_my_group({'course_code': 'UL2IN013', 'options': ['1', '3']})
+  ? Which group are you in for UL2IN013?  Your group: 2
+--- Round 4: stop_reason=tool_use, tokens in/out=7767/1045
+  Claude asks: report_exams(5 exams)
+
+=== 5 exams for me (0 other-group slots hidden) ===
+Thu 2026-03-12  18:15-20:15   UL2IN003   Examen Algorithmique 1  (past)
+Tue 2026-04-14  10:45-11:45   UL2XX002   CC2 Cours fictif B  (past)
+Tue 2026-04-21  10:45-12:15   UL2XX001   CC1 Cours fictif A  (past)
+Thu 2026-05-07  time unknown  LU2LVAN2   Épreuve finale d'anglais LU2LVAN2  (past)
+Thu 2026-05-28  16:30-18:30   UL2IN009   Examen Introduction aux bases de données relationnelles  (past)
+```
+
+The output is right for a group 2 student. But "0 other-group slots hidden" shows a problem: the model dropped the other groups' slots itself, so my code had nothing to filter. See Results.
+
+## Design decisions
+
+- **No agent framework.** I wanted to understand the loop itself: `stop_reason`, why the whole history is resent every round (the API is stateless), and how parallel tool calls come back.
+- **The model extracts; code computes.** The model reports dates as written, such as day and month, or "thursday" + "this". Code takes the email's date from the mailbox (not from the model) and computes the real date, year, time zone, the default 2-hour length and duplicates. It also checks that "jeudi 28 mai" really is a Thursday.
+- **Errors are feedback.** If any entry is invalid (an impossible date, "16h30" instead of "16:30", a group slot before my group is known), code rejects the whole report with one message that lists every problem, and the model fixes them all in the next round.
+- **Least privilege, in layers.** Gmail is read-only (`gmail.readonly`). Calendar access is limited to calendars the app created (`calendar.app.created`). The model has no write tool, so text inside an email can't trigger a write. Code asks `[y/N]` before any calendar write, and a test checks that "no" makes zero API writes.
+- **A fake mailbox with the same interface as Gmail.** I built and tested the loop on 8 sample emails first. Switching to Gmail changed no loop code.
+- **Stable event IDs** (course + start time): re-running never duplicates an event, and an event I deleted isn't offered again.
+
+## Hard cases
+
+| Case (sample email) | Handling |
 |---|---|
-| An email contains instructions ("delete the calendar…") | Claude has no tool that writes anything. Email text is treated as data. |
-| The program changes your email | The Gmail permission is `gmail.readonly`; Google enforces it. |
-| The program touches your personal calendar | The calendar permission is `calendar.app.created`: only calendars this app created are reachable. |
-| An event is added without your agreement | Plain code asks `[y/N]` before any calendar write. |
-| Your group is guessed | A per-group exam is rejected until you have answered the group question. |
+| No time: "dans votre salle et créneau habituel" (e2) | `time_unknown`: shown as a notice, never a calendar event |
+| "ce soir à 18h15", no end time (e4) | The email's date; end = start + 2 h |
+| "ce jeudi" in a Tuesday email (e3) | Code resolves it to that Thursday |
+| Copy review in the same email as the exam (e1) | Prompt rule; never reported in 15 runs |
+| Exam postponed from 14 to 21 April (e6) | Only the new date |
+| Per-group slots (e7), a quiz for groups 1 and 3 only (e3) | Asks my group; code filters. The model also filters by itself (see Results). |
+| "Examen de votre dossier de bourse" (e5) | Not an exam; never reported |
+| "pas avant le 20 avril… rien n'est sûr" (e8) | No fixed date: not reported |
+| Rooms assigned by surname range (e4) | **Not handled yet** |
 
-No passwords are stored. Google login happens in the browser (OAuth), and the tokens can be revoked at any time at [myaccount.google.com/permissions](https://myaccount.google.com/permissions).
+## Results
 
-**Privacy:** the emails Claude decides to open are sent to the Anthropic API so it can read them.
+How each step changed the output. These are single development runs, so they show direction, not accuracy:
 
-## Installation
+| Step | Result (one run) |
+|---|---|
+| Bare loop, no system prompt | 2 of 6 exams, free text |
+| System prompt: one rule per mistake seen | 6 of 6 exams, free text |
+| `report_exams` + checks in code | 7 of 7 entries (one exam has two group slots). "16h30" was rejected and fixed in the next round. |
+| Groups + end-to-end test | Test passed |
 
-### Requirements
+**The current version, run 10 times** on the 8 sample emails as a group 2 student:
 
-- Linux or macOS
-- [uv](https://docs.astral.sh/uv/), which also installs the right Python version (3.14) for you
-- An [Anthropic API key](https://console.anthropic.com/). One run costs well under one cent with the default model (Claude Haiku 5.5).
-- A Google account whose Gmail receives your university mail. If your university uses its own mailbox (Zimbra, Outlook), turn on automatic forwarding to Gmail first.
+- 65 of 70 expected entries matched exactly; 5 of 10 runs were perfect.
+- No false positives (the scholarship email, the copy review, the old postponed date, the unfixed date) and no rejected reports.
+- 4–5 rounds and about 29,000 input + 2,500 output tokens per run: about $0.004 with Claude Haiku 5.5.
 
-### 1. Get the code
+All 5 misses are the same: the groups 1 and 3 quiz, dropped after `get_my_group` returned group 2. The prompt says to report every slot and let code filter, but the model filters by itself. In 5 more runs as a group 1 student, the quiz appeared every time, with the right date, but as `['1']` only.
+
+So the student saw the right exams in all 15 runs, but a rule that lives only in the prompt isn't followed reliably. The single run marked "Test passed" above hid that; running it 10 times showed it. In an earlier 10-run batch, one run also placed "ce jeudi" a week late.
+
+On my real inbox (one run), it found the one exam with a fixed date and ignored a partiel whose date wasn't set. The broad search hit its 20-result cap, and more than half the results were unrelated.
+
+## Limitations and next steps
+
+- **Don't tell the model my group.** It doesn't need it. Next: remove `get_my_group` from its tools and ask in code after the report, so the model can't filter.
+- **Search recall:** at most 20 results, newest first, from the last 6 months, and the model isn't told when a list was cut off.
+- **A small eval** (8 emails, exact match), so `pytest -m api` fails about half the time. Next: more anonymized real emails, per-field scoring.
+- **No adversarial email** in the samples yet, even though the architecture is designed against injected instructions.
+- **A moved exam** gets a new event, and the old one stays until I delete it.
+- **Not built:** rooms, Moodle (iCal export or Web Services API), and a morning notification that never adds events by itself.
+
+## How this was built
+
+This was my first experience with agents. I wanted to understand the concept by building one, and to try every tool available along the way, including Claude Code (Anthropic's coding assistant). I wrote the first version of the agent loop and the plan for how the agent would use its tools. Claude Code wrote the rest, one phase at a time: the tools, validation, date logic, Gmail and Calendar code, tests and sample emails.
+
+I directed the work and made the call at each decision point. A few decisions were my own, such as not reporting an exam until its date is fixed. Most were choices between options Claude laid out, such as read-only Gmail instead of storing my university password, or a separate calendar with one confirmation per batch. I tested each phase on my own inbox. `PROGRESS.md` logs every step and what it taught me.
+
+## Run it
+
+You need [uv](https://docs.astral.sh/uv/), which installs Python 3.14, and an Anthropic API key.
 
 ```sh
-git clone https://github.com/Hlib-Kharytonov/automatic-deadlines.git
-cd automatic-deadlines
+git clone <repo-url> && cd automatic-deadlines
 uv sync
+cp .env.example .env        # add ANTHROPIC_API_KEY
+uv run pytest               # 59 offline tests, free
+uv run exam-agent --fake    # the agent on the sample emails, no Google needed
+uv run pytest -m api        # end-to-end against the expected exams, about $0.004
 ```
 
-If you don't have uv yet: `curl -LsSf https://astral.sh/uv/install.sh | sh`, then open a new terminal.
+For your own Gmail and Google Calendar, see [docs/SETUP.md](docs/SETUP.md).
 
-### 2. Create the `.env` file
+## Privacy
 
-```sh
-cp .env.example .env
-```
-
-Paste your Anthropic API key after `ANTHROPIC_API_KEY=`. The two Google values come from the next step.
-
-`.env` is gitignored. Never commit it.
-
-### 3. Set up Google access (once, about 15 minutes)
-
-All of this happens in the [Google Cloud Console](https://console.cloud.google.com/), signed in with the Gmail account that receives your university mail.
-
-1. **Create a project.** Use the project picker at the top → **New project** → any name, e.g. `exam-agent`.
-2. **Enable the two APIs.** Go to **APIs & Services → Library**, search for and **Enable**:
-   - **Gmail API**
-   - **Google Calendar API**
-3. **Configure the consent screen.** In newer consoles this is called **Google Auth Platform**.
-   - User type: **External**.
-   - App name: anything. Support and developer email: your own.
-   - Under **Audience → Test users**: add your Gmail address.
-   - Leave the publishing status on **Testing**. You don't need to publish or verify the app.
-4. **Create the login credentials.** Go to **Credentials → Create credentials → OAuth client ID**:
-   - Application type: **Desktop app**.
-   - Copy the **Client ID** and **Client secret** into `.env`:
-     ```
-     GOOGLE_CLIENT_ID=1234567890-abc….apps.googleusercontent.com
-     GOOGLE_CLIENT_SECRET=GOCSPX-…
-     ```
-
-### 4. First run
-
-```sh
-uv run exam-agent
-```
-
-1. Your browser opens to allow **read-only Gmail** access. Google warns *"Google hasn't verified this app"*; that's expected for your own app in Testing mode, so click **Continue**.
-2. The agent searches your mail, and may ask which group you're in for some courses.
-3. If there are upcoming exams, the browser opens a second time to allow access to **calendars created by this app**.
-4. Check the list and type `y` to add the events.
-
-The new **Exams** calendar appears in [Google Calendar](https://calendar.google.com) under **My calendars**. On a phone, you may need to tick it in the app's menu, or turn on its sync under Settings.
-
-## Usage
-
-```sh
-uv run exam-agent                 # scan Gmail, write exams.ics, offer to add events to Google Calendar
-uv run exam-agent --no-calendar   # scan Gmail, print the exams and write exams.ics only
-uv run exam-agent --fake          # use the 8 sample emails in tests/fixtures/ (no Google at all)
-```
-
-Run it whenever you like. Each run only offers exams that aren't in the calendar yet.
-
-### Files it creates
-
-All of these are gitignored and stay on your machine.
-
-| File | Contents | Safe to delete? |
-|---|---|---|
-| `.env` | API key and Google client credentials | No, you'd have to fill it in again |
-| `.secrets/gmail_token.json` | Gmail login (read-only) | Yes: you'll be asked to log in again |
-| `.secrets/calendar_token.json` | Calendar login (Exams calendar only) | Yes: you'll be asked to log in again |
-| `.secrets/exam_calendar.json` | The id of the Exams calendar | Yes: a new Exams calendar is created on the next yes |
-| `groups.json` | Your group in each course | Yes: you'll be asked again |
-| `exams.ics` | The latest calendar file | Yes: it's rewritten on every run |
-
-## Tests
-
-```sh
-uv run pytest          # 59 offline tests: no network, no cost, under a second
-uv run pytest -m api   # end-to-end: the real agent on the sample emails, compared with the expected exams (costs a little)
-```
-
-The sample emails in `tests/fixtures/emails.json` include traps: a scholarship email that says "examen", a copy review, a postponed exam, and an exam with no fixed date yet. Each sample lists the exams that should be found.
-
-## Troubleshooting
-
-| Problem | Fix |
-|---|---|
-| `KeyError: 'GOOGLE_CLIENT_ID'` | `.env` is missing the Google values (step 3.4). |
-| Browser says `access_denied` / "app is being tested" | Add your Gmail address under **Test users** (step 3.3). |
-| `HttpError 403 … API has not been used in project` | Enable the Gmail API or the Google Calendar API (step 3.2), wait a minute, then try again. |
-| Browser login every few days | Expected in Testing mode: Google expires the login after about 7 days, and the program reopens the browser by itself. |
-| The Exams calendar doesn't show up | Tick **Exams** under **My calendars** in Google Calendar; on Android, turn on its sync. |
-| An exam is missing | Searches cover the last 6 months and return at most 20 emails each. Look at the `Claude asks:` lines to see what was searched. |
-| A wrong group was saved | Edit or delete `groups.json`. |
-| An exam moved and the old event stays | Delete the old event by hand; it won't be offered again. |
-
-## Project structure
-
-```
-src/exam_agent/
-├── __init__.py       main(): runs the four stages
-├── loop.py           the agent loop (tool use, max 10 rounds)
-├── prompts.py        system prompt
-├── tools.py          tool definitions, run_tool(), process_report() checks
-├── dates.py          date and time arithmetic (relative dates, Paris time zone)
-├── groups.py         your group per course (groups.json)
-├── calendar_file.py  exams.ics
-├── gcal.py           Google Calendar sync with the y/N confirmation
-├── google_auth.py    OAuth login shared by Gmail and Calendar
-└── mail/
-    ├── fake.py       sample-email mailbox for tests and --fake
-    └── gmail.py      Gmail mailbox (same interface)
-```
-
-`CLAUDE.md` holds the design rules, and `PROGRESS.md` is the step-by-step build log with what each step taught.
-
-## Status and roadmap
-
-- [x] Phase 1: find exams in email (sample emails, then real Gmail)
-- [x] Phase 2: `.ics` file
-- [x] Phase 3: Google Calendar with confirmation and duplicate check
-- [ ] Phase 4: Moodle (built-in iCal export or Web Services API)
-- [ ] Phase 5: morning scan with a notification (systemd user timer); it never adds events by itself
-- [ ] v2: rooms, including surname ranges ("ABC – DEF → Amphi A4")
+- The only real emails in the repo are 4 university announcements, with teacher names and the surname list removed. The other 4 samples are synthetic.
+- Secrets live only in `.env`. OAuth tokens and the calendar ID are in `.secrets/`; saved groups are in `groups.json`. All of these are gitignored.
+- The emails the model opens are sent to the Anthropic API.

@@ -25,6 +25,7 @@ uv run exam-agent --no-calendar   # Gmail, but only print and write exams.ics
 uv add <package>       # add a dependency
 uv run pytest          # run offline tests (free)
 uv run pytest -m api   # end-to-end test with the real API (costs a little)
+uv run ruff format src tests   # format the code (line length 110)
 ```
 
 ## Structure (planned parts marked)

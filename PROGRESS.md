@@ -4,8 +4,8 @@ Where the project stands, what each step taught, and what comes next.
 Update this at the end of every step, before committing.
 
 ## Current status
-- **Phase:** 3 done (exams added to a dedicated "Exams" Google Calendar after one y/N; second run offers nothing twice).
-- **Next step:** phase 4, Moodle: try the built-in iCal export or the Web Services API first. No SSO scraping.
+- **Phase:** 3 done. Evaluated over 10 runs; README written for reviewers.
+- **Next step:** stop giving the model my group (ask in code after the report), then rerun the evaluation. After that, phase 4 (Moodle).
 - **Known limits (accepted for now):** searches return at most 20 emails, newest first, from the last 6 months; Claude isn't told when a list was cut off. A moved exam gets a new UID, so the old event stays until I delete it.
 
 ## Log
@@ -93,3 +93,13 @@ Update this at the end of every step, before committing.
 - **Learned:**
   - Layered safety: smallest permission (Google enforces it) + no model access to the write (architecture) + a typed yes (code).
   - Test the safety rule directly: record every write and assert the list is empty after "no".
+
+### 2026-11-17: Evaluation, README for reviewers, cleanup
+- Evaluation: 10 runs of the agent on the 8 sample emails as a group 2 student. 65/70 expected entries exact, 5/10 runs perfect, 0 false positives, 0 rejected reports; 4-5 rounds, about 29k input + 2.5k output tokens per run (about $0.004 with Haiku 5.5). All 5 misses: the groups 1 and 3 quiz, dropped by the model after `get_my_group` returned group 2. 5 runs as a group 1 student: the quiz shown every time, but as `['1']` only. So the model filters by group itself, against the prompt.
+- Sample e4: surname fragments in the room list replaced with neutral letters (older commits still have them).
+- README rewritten for reviewers: why, how it works with a real trace, design decisions, hard cases, results (iteration table labelled as single runs + the 10-run eval), limitations, who wrote what. Setup moved to `docs/SETUP.md`.
+- `ruff` added (line length 110) and the code formatted; the Anthropic client is now created inside `run_agent()`, not at import.
+- **Learned:**
+  - One passing run proves little: the end-to-end test passed once, but 10 runs showed it passes about half the time.
+  - A rule that lives only in the prompt is a request, not a guarantee. The fix is to not give the model the information (my group) at all.
+- **Next step:** remove `get_my_group` from the model's tools and ask for groups in code after the report; rerun the 10-run evaluation.
