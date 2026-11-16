@@ -27,6 +27,13 @@ def event_uid(exam: dict) -> str:
     return f"{course}-{exam['start']:%Y%m%dT%H%M}@exam-agent".lower()
 
 
+def event_title(exam: dict) -> str:
+    title = exam["exam_name"]
+    if exam["course_code"] and exam["course_code"] not in title:
+        title += f" ({exam['course_code']})"
+    return title
+
+
 def build_calendar(exams: list[dict], now: datetime) -> Calendar:
     calendar = Calendar()
     calendar.add("prodid", "-//exam-agent//EN")
@@ -38,9 +45,7 @@ def build_calendar(exams: list[dict], now: datetime) -> Calendar:
         event.add("dtstamp", now)
         event.add("dtstart", exam["start"])  # aware datetimes in Europe/Paris
         event.add("dtend", exam["end"])
-        title = exam["exam_name"]
-        if exam["course_code"] and exam["course_code"] not in title:
-            title += f" ({exam['course_code']})"
+        title = event_title(exam)
         event.add("summary", title)
         event.add("description", f"\"{exam['quote']}\"\n\nFound by exam-agent in email {exam['email_id']}.")
 

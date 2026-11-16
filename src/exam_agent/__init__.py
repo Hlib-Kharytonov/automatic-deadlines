@@ -17,20 +17,26 @@ def main() -> None:
     from dotenv import load_dotenv
 
     parser = argparse.ArgumentParser(description="Find exam announcements in my email.")
-    parser.add_argument("--fake", action="store_true", help="use the sample emails instead of Gmail")
+    parser.add_argument("--fake", action="store_true", help="use the sample emails instead of Gmail (no calendar)")
+    parser.add_argument("--no-calendar", action="store_true", help="don't offer to add events to Google Calendar")
     args = parser.parse_args()
 
     load_dotenv()  # before anything reads GOOGLE_* or creates the Anthropic client
+    calendar = None
     if args.fake:
         mailbox = FakeMailbox(FIXTURES)
     else:
         from exam_agent.mail.gmail import GmailMailbox
 
         mailbox = GmailMailbox()
-    run(mailbox, GroupMemory(GROUPS_FILE), date.today())
+        if not args.no_calendar:
+            from exam_agent.gcal import ExamCalendar
+
+            calendar = ExamCalendar()
+    run(mailbox, GroupMemory(GROUPS_FILE), date.today(), calendar=calendar)
 
 
-def run(mailbox, groups: GroupMemory, today: date, ics_path: Path = ICS_FILE) -> None:
+def run(mailbox, groups: GroupMemory, today: date, ics_path: Path = ICS_FILE, calendar=None) -> None:
     # Imported here so that loading the package (e.g. in tests) doesn't create an API client.
     from exam_agent.calendar_file import select_for_calendar, write_ics
     from exam_agent.loop import AgentError, run_agent
@@ -56,3 +62,7 @@ def run(mailbox, groups: GroupMemory, today: date, ics_path: Path = ICS_FILE) ->
     events = select_for_calendar(mine, today)
     write_ics(events, ics_path, now=datetime.now(UTC))
     print(f"\n{len(events)} upcoming exams written to {ics_path} (import it into your calendar app).")
+
+    # Phase 3: Google Calendar, only after an explicit yes (asked inside sync()).
+    if calendar is not None:
+        calendar.sync(events, today)

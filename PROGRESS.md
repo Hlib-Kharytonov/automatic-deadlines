@@ -4,9 +4,9 @@ Where the project stands, what each step taught, and what comes next.
 Update this at the end of every step, before committing.
 
 ## Current status
-- **Phase:** 2 done (exams written to `exams.ics`, imported by hand into any calendar app).
-- **Next step:** phase 3, Google Calendar API: list existing events, skip duplicates, create events only after my explicit "yes" (checked in code).
-- **Known limits (accepted for now):** searches return at most 20 emails, newest first, from the last 6 months (`SEARCH_WINDOW` in `mail/gmail.py`), and Claude isn't told when a list was cut off.
+- **Phase:** 3 in progress (Google Calendar). Code and offline tests are done; waiting for the Calendar API to be enabled and the first real run.
+- **To finish 3:** enable "Google Calendar API" in the same Cloud project, run `uv run exam-agent`, allow calendar access in the browser, answer y, check the "Exams" calendar; run again and check that nothing is offered twice.
+- **Known limits (accepted for now):** searches return at most 20 emails, newest first, from the last 6 months; Claude isn't told when a list was cut off. A moved exam gets a new UID, so the old event stays until I delete it.
 
 ## Log
 
@@ -82,3 +82,13 @@ Update this at the end of every step, before committing.
 - **Learned:**
   - Not every step needs the model. The loop already returns checked data, so the output stage is plain, testable code.
   - Field descriptions decide output quality: Claude's naming varied until the description said what a good title looks like.
+
+### 2026-11-16: Google Calendar (phase 3, code done)
+- `gcal.py`: `ExamCalendar.sync()` lists the Exams calendar (with `showDeleted`, so events I deleted aren't offered again), shows the new ones, asks one y/N for the batch, creates the calendar on first yes, inserts events with the same UID as `exams.ics`.
+- Permission `calendar.app.created`: the app can only see and change calendars it created. Separate token file, so the Gmail token stays read-only. `google_auth.py` holds the shared OAuth login.
+- Design change: no calendar tools for Claude (CLAUDE.md had planned them). The write happens in code after the loop, so an email can't trigger it.
+- `main()`: Gmail runs offer the calendar; `--fake` never touches it; `--no-calendar` skips it.
+- `tests/test_gcal.py`: stand-in Calendar API that records every write. "No" means zero writes; duplicates and deleted events skipped; a calendar deleted by hand is recreated.
+- **Learned:**
+  - Layered safety: smallest permission (Google enforces it) + no model access to the write (architecture) + a typed yes (code).
+  - Test the safety rule directly: record every write and assert the list is empty after "no".

@@ -10,16 +10,14 @@ Login: OAuth in the browser on the first run (no password). The token is saved i
 import base64
 import email
 import email.policy
-import os
 from datetime import datetime
 from html.parser import HTMLParser
-from pathlib import Path
 
 from exam_agent.dates import PARIS
+from exam_agent.google_auth import SECRETS, connect
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
-PROJECT = Path(__file__).parents[3]
-TOKEN_FILE = PROJECT / ".secrets" / "gmail_token.json"
+TOKEN_FILE = SECRETS / "gmail_token.json"
 
 # Only recent mail: old exams are noise. Gmail syntax, added to every search.
 SEARCH_WINDOW = "newer_than:6m"
@@ -27,45 +25,9 @@ SEARCH_WINDOW = "newer_than:6m"
 MAX_BODY_CHARS = 20_000
 
 
-def connect(token_file: Path = TOKEN_FILE):
-    """Return a Gmail API service, logging in through the browser if needed."""
-    # Imported here so that tests and --fake runs don't need the Google libraries loaded.
-    from google.auth.exceptions import RefreshError
-    from google.auth.transport.requests import Request
-    from google.oauth2.credentials import Credentials
-    from google_auth_oauthlib.flow import InstalledAppFlow
-    from googleapiclient.discovery import build
-
-    creds = None
-    if token_file.exists():
-        creds = Credentials.from_authorized_user_file(str(token_file), SCOPES)
-    if creds and creds.expired and creds.refresh_token:
-        try:
-            creds.refresh(Request())
-        except RefreshError:
-            creds = None  # refresh token expired or revoked: log in again
-    if not creds or not creds.valid:
-        client_config = {
-            "installed": {
-                "client_id": os.environ["GOOGLE_CLIENT_ID"],
-                "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "redirect_uris": ["http://localhost"],
-            }
-        }
-        flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
-        print("Opening the browser for Gmail read-only access...")
-        creds = flow.run_local_server(port=0)
-        token_file.parent.mkdir(mode=0o700, exist_ok=True)
-        token_file.write_text(creds.to_json(), encoding="utf-8")
-        token_file.chmod(0o600)
-    return build("gmail", "v1", credentials=creds, cache_discovery=False)
-
-
 class GmailMailbox:
     def __init__(self, service=None):
-        self.service = service if service is not None else connect()
+        self.service = service if service is not None else connect("gmail", "v1", SCOPES, TOKEN_FILE)
 
     def search(self, query: str, max_results: int = 20) -> list[dict]:
         """Gmail search. 'partiel OR examen' works as in Gmail's search box. Newest first."""
