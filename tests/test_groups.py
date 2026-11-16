@@ -46,15 +46,18 @@ def test_groups_are_per_course(tmp_path):
 def test_is_mine(tmp_path):
     memory = GroupMemory(tmp_path / "groups.json")
     memory.groups = {"UL2XX002": "Groupe 2", "UL2IN013": "2"}
-    assert memory.is_mine("UL2XX002", ["2"])            # 'Groupe 2' == '2'
+    assert memory.is_mine("UL2XX002", ["2"])  # 'Groupe 2' == '2'
     assert not memory.is_mine("UL2XX002", ["4"])
-    assert not memory.is_mine("UL2IN013", ["1", "3"])   # quiz for groups 1 and 3 only
-    assert memory.is_mine("UL2IN009", [])               # for everyone
-    assert not memory.is_mine("UL2ZZ999", ["1"])        # unknown group: not shown as mine
+    assert not memory.is_mine("UL2IN013", ["1", "3"])  # quiz for groups 1 and 3 only
+    assert memory.is_mine("UL2IN009", [])  # for everyone
+    assert not memory.is_mine("UL2ZZ999", ["1"])  # unknown group: not shown as mine
 
 
 def test_get_my_group_tool_returns_json(tmp_path):
     memory = GroupMemory(tmp_path / "groups.json", ask=FakeStudent("4"))
-    result = json.loads(run_tool("get_my_group", {"course_code": "UL2XX002", "options": ["2", "4"]},
-                                 FakeMailbox(FIXTURES), memory))
+    result = json.loads(
+        run_tool(
+            "get_my_group", {"course_code": "UL2XX002", "options": ["2", "4"]}, FakeMailbox(FIXTURES), memory
+        )
+    )
     assert result == {"course_code": "UL2XX002", "my_group": "4"}

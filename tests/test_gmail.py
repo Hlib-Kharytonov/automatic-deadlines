@@ -46,8 +46,14 @@ class FakeGmailApi:
             raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
             return _Call({"id": id, "internalDate": TUESDAY_MORNING_MS, "raw": raw})
         headers = [{"name": k, "value": message[k]} for k in metadataHeaders]
-        return _Call({"id": id, "internalDate": TUESDAY_MORNING_MS, "snippet": "ce jeudi aura lieu un Quizz",
-                      "payload": {"headers": headers}})
+        return _Call(
+            {
+                "id": id,
+                "internalDate": TUESDAY_MORNING_MS,
+                "snippet": "ce jeudi aura lieu un Quizz",
+                "payload": {"headers": headers},
+            }
+        )
 
 
 class _Call:
@@ -68,13 +74,15 @@ def mailbox():
 def test_search_adds_the_date_window_and_keeps_or_together(mailbox):
     hits = mailbox.search("quizz OR partiel")
     assert mailbox.service.queries == ["(quizz OR partiel) newer_than:6m"]
-    assert hits == [{
-        "id": "m1",
-        "from": "Moodle <noreply@moodle.example.fr>",
-        "date": "2026-03-24",
-        "subject": "[UL2IN013 - Projet de développement - S2-25] Rappel: Quizz",
-        "snippet": "ce jeudi aura lieu un Quizz",
-    }]
+    assert hits == [
+        {
+            "id": "m1",
+            "from": "Moodle <noreply@moodle.example.fr>",
+            "date": "2026-03-24",
+            "subject": "[UL2IN013 - Projet de développement - S2-25] Rappel: Quizz",
+            "snippet": "ce jeudi aura lieu un Quizz",
+        }
+    ]
 
 
 def test_read_decodes_the_body(mailbox):

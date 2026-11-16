@@ -17,8 +17,12 @@ def main() -> None:
     from dotenv import load_dotenv
 
     parser = argparse.ArgumentParser(description="Find exam announcements in my email.")
-    parser.add_argument("--fake", action="store_true", help="use the sample emails instead of Gmail (no calendar)")
-    parser.add_argument("--no-calendar", action="store_true", help="don't offer to add events to Google Calendar")
+    parser.add_argument(
+        "--fake", action="store_true", help="use the sample emails instead of Gmail (no calendar)"
+    )
+    parser.add_argument(
+        "--no-calendar", action="store_true", help="don't offer to add events to Google Calendar"
+    )
     args = parser.parse_args()
 
     load_dotenv()  # before anything reads GOOGLE_* or creates the Anthropic client
@@ -37,7 +41,7 @@ def main() -> None:
 
 
 def run(mailbox, groups: GroupMemory, today: date, ics_path: Path = ICS_FILE, calendar=None) -> None:
-    # Imported here so that loading the package (e.g. in tests) doesn't create an API client.
+    # Imported here so that --help and the offline tests don't load the Anthropic SDK.
     from exam_agent.calendar_file import select_for_calendar, write_ics
     from exam_agent.loop import AgentError, run_agent
 
@@ -54,9 +58,11 @@ def run(mailbox, groups: GroupMemory, today: date, ics_path: Path = ICS_FILE, ca
         else:
             when = "time unknown"  # shown as a notice; never becomes a calendar event
         past = "  (past)" if exam["date"] < today else ""
-        print(f"{exam['date']:%a %Y-%m-%d}  {when:<12}  {exam['course_code'] or '?':<9}  "
-              f"{exam['exam_name']}{past}")
-        print(f"    \"{exam['quote']}\"")
+        print(
+            f"{exam['date']:%a %Y-%m-%d}  {when:<12}  {exam['course_code'] or '?':<9}  "
+            f"{exam['exam_name']}{past}"
+        )
+        print(f'    "{exam["quote"]}"')
 
     # Phase 2: the calendar file. Plain code, no AI: the data is already checked.
     events = select_for_calendar(mine, today)

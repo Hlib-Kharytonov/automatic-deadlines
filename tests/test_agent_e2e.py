@@ -32,7 +32,9 @@ def test_agent_finds_every_expected_exam(tmp_path):
     groups = GroupMemory(tmp_path / "groups.json", ask=no_student)
     groups.groups = {"UL2IN013": "2", "UL2XX002": "2"}
 
-    exams = run_agent("Find the exams announced in my email.", FakeMailbox(FIXTURES), groups, date(2026, 3, 1))
+    exams = run_agent(
+        "Find the exams announced in my email.", FakeMailbox(FIXTURES), groups, date(2026, 3, 1)
+    )
 
     expected = [
         key(e["course_code"], e["status"], e["date"], e.get("start"), e.get("end"), e.get("groups", []))
@@ -40,8 +42,14 @@ def test_agent_finds_every_expected_exam(tmp_path):
         for e in email["expected"]
     ]
     got = [
-        key(e["course_code"], e["status"], e["date"].isoformat(),
-            e["start"] and f"{e['start']:%H:%M}", e["end"] and f"{e['end']:%H:%M}", e["groups"])
+        key(
+            e["course_code"],
+            e["status"],
+            e["date"].isoformat(),
+            e["start"] and f"{e['start']:%H:%M}",
+            e["end"] and f"{e['end']:%H:%M}",
+            e["groups"],
+        )
         for e in exams
     ]
     assert sorted(got) == sorted(expected)

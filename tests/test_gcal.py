@@ -16,8 +16,14 @@ TODAY = date(2026, 11, 16)
 def exam(day: date, start: str = "18:30", name: str = "CC1 Bases de données") -> dict:
     start_at, end_at = exam_times(day, start)
     return {
-        "email_id": "m1", "course_code": "UL2IN010", "exam_name": name, "status": "scheduled",
-        "date": day, "start": start_at, "end": end_at, "groups": [],
+        "email_id": "m1",
+        "course_code": "UL2IN010",
+        "exam_name": name,
+        "status": "scheduled",
+        "date": day,
+        "start": start_at,
+        "end": end_at,
+        "groups": [],
         "quote": "vous allez avoir votre première CC1 le 30 Novembre à 18h30",
     }
 
@@ -28,7 +34,7 @@ class FakeCalendarApi:
     def __init__(self, existing_uids=(), calendar_gone=False):
         self.existing = list(existing_uids)
         self.calendar_gone = calendar_gone
-        self.writes = []      # every call that changes something in Google
+        self.writes = []  # every call that changes something in Google
         self.list_params = []
 
     def calendars(self):
@@ -89,7 +95,7 @@ def test_no_means_nothing_is_written_at_all(state):
     added = ExamCalendar(api, state).sync([exam(date(2026, 11, 30))], TODAY, confirm=student)
     assert added == []
     assert student.asked == ["Add these 1 events to your 'Exams' calendar?"]
-    assert api.writes == []           # not even the calendar was created
+    assert api.writes == []  # not even the calendar was created
     assert not state.exists()
 
 

@@ -39,7 +39,9 @@ def connect(api: str, version: str, scopes: list[str], token_file: Path):
             }
         }
         flow = InstalledAppFlow.from_client_config(client_config, scopes)
-        print(f"Opening the browser to allow {api} access ({', '.join(s.rsplit('/', 1)[-1] for s in scopes)})...")
+        print(
+            f"Opening the browser to allow {api} access ({', '.join(s.rsplit('/', 1)[-1] for s in scopes)})..."
+        )
         creds = flow.run_local_server(port=0)
         token_file.parent.mkdir(mode=0o700, exist_ok=True)
         token_file.write_text(creds.to_json(), encoding="utf-8")

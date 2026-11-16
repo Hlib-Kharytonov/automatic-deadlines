@@ -57,7 +57,9 @@ class GmailMailbox:
             raw = self.service.users().messages().get(userId="me", id=email_id, format="raw").execute()
         except HttpError as error:
             if error.resp.status in (400, 404):
-                raise ValueError(f"No email with id {email_id!r}. Use an id returned by search_emails.") from None
+                raise ValueError(
+                    f"No email with id {email_id!r}. Use an id returned by search_emails."
+                ) from None
             raise
         message = email.message_from_bytes(base64.urlsafe_b64decode(raw["raw"]), policy=email.policy.default)
         return {

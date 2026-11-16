@@ -47,7 +47,7 @@ def build_calendar(exams: list[dict], now: datetime) -> Calendar:
         event.add("dtend", exam["end"])
         title = event_title(exam)
         event.add("summary", title)
-        event.add("description", f"\"{exam['quote']}\"\n\nFound by exam-agent in email {exam['email_id']}.")
+        event.add("description", f'"{exam["quote"]}"\n\nFound by exam-agent in email {exam["email_id"]}.')
 
         alarm = Alarm()
         alarm.add("action", "DISPLAY")

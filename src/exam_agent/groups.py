@@ -37,7 +37,9 @@ class GroupMemory:
     def get_or_ask(self, course: str, options: list[str]) -> str:
         if course not in self.groups:
             self.groups[course] = self.ask(course, options)
-            self.path.write_text(json.dumps(self.groups, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            self.path.write_text(
+                json.dumps(self.groups, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            )
         return self.groups[course]
 
     def is_mine(self, course: str, slot_groups: list[str]) -> bool:

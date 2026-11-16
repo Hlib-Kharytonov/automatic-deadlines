@@ -49,13 +49,17 @@ class ExamCalendar:
         uids, page = set(), None
         try:
             while True:
-                listing = self.service.events().list(
-                    calendarId=self.calendar_id,
-                    timeMin=datetime.combine(today, time(0), tzinfo=PARIS).isoformat(),
-                    singleEvents=True,
-                    showDeleted=True,
-                    pageToken=page,
-                ).execute()
+                listing = (
+                    self.service.events()
+                    .list(
+                        calendarId=self.calendar_id,
+                        timeMin=datetime.combine(today, time(0), tzinfo=PARIS).isoformat(),
+                        singleEvents=True,
+                        showDeleted=True,
+                        pageToken=page,
+                    )
+                    .execute()
+                )
                 uids |= {e["iCalUID"] for e in listing.get("items", []) if "iCalUID" in e}
                 page = listing.get("nextPageToken")
                 if not page:
@@ -68,10 +72,17 @@ class ExamCalendar:
 
     def _ensure_calendar(self) -> str:
         if self.calendar_id is None:
-            created = self.service.calendars().insert(
-                body={"summary": CALENDAR_NAME, "timeZone": "Europe/Paris",
-                      "description": "Exams found in my email by exam-agent."}
-            ).execute()
+            created = (
+                self.service.calendars()
+                .insert(
+                    body={
+                        "summary": CALENDAR_NAME,
+                        "timeZone": "Europe/Paris",
+                        "description": "Exams found in my email by exam-agent.",
+                    }
+                )
+                .execute()
+            )
             self.state_file.parent.mkdir(mode=0o700, exist_ok=True)
             self.state_file.write_text(json.dumps({"calendar_id": created["id"]}) + "\n", encoding="utf-8")
         return self.calendar_id
@@ -86,8 +97,10 @@ class ExamCalendar:
         """
         existing = self.existing_uids(today)
         new = [e for e in exams if event_uid(e) not in existing]
-        print(f"\n=== Google Calendar '{CALENDAR_NAME}': {len(new)} new, "
-              f"{len(exams) - len(new)} already there or deleted by you ===")
+        print(
+            f"\n=== Google Calendar '{CALENDAR_NAME}': {len(new)} new, "
+            f"{len(exams) - len(new)} already there or deleted by you ==="
+        )
         if not new:
             return []
         for exam in new:
@@ -106,7 +119,7 @@ def event_body(exam: dict) -> dict:
     return {
         "iCalUID": event_uid(exam),  # same id as in exams.ics: the duplicate check relies on it
         "summary": event_title(exam),
-        "description": f"\"{exam['quote']}\"\n\nFound by exam-agent in email {exam['email_id']}.",
+        "description": f'"{exam["quote"]}"\n\nFound by exam-agent in email {exam["email_id"]}.',
         "start": {"dateTime": exam["start"].isoformat(), "timeZone": "Europe/Paris"},
         "end": {"dateTime": exam["end"].isoformat(), "timeZone": "Europe/Paris"},
         "reminders": {

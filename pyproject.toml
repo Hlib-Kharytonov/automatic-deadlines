@@ -25,8 +25,12 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "pytest>=9.2.0",
+    "ruff>=0.17.5",
 ]
 
 [tool.pytest.ini_options]
 markers = ["api: calls the real Claude API (costs money); run with -m api"]
 addopts = "-m 'not api'"
+
+[tool.ruff]
+line-length = 110

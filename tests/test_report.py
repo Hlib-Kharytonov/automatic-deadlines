@@ -68,9 +68,18 @@ def test_ce_soir_uses_the_email_date_and_default_length(mailbox, groups):
 def test_ce_jeudi_without_time_is_time_unknown(mailbox, groups):
     # e3 is dated Tuesday 2026-03-24: "ce jeudi" -> 2026-03-26
     [result] = process_report(
-        [exam(email_id="e3", course_code="UL2IN013", date=relative("this", "thursday"),
-              start=None, end=None, groups=["1", "3"])],
-        mailbox, groups,
+        [
+            exam(
+                email_id="e3",
+                course_code="UL2IN013",
+                date=relative("this", "thursday"),
+                start=None,
+                end=None,
+                groups=["1", "3"],
+            )
+        ],
+        mailbox,
+        groups,
     )
     assert result["status"] == "time_unknown"
     assert result["date"] == date(2026, 3, 26)
@@ -85,9 +94,14 @@ def test_duration_instead_of_end(mailbox, groups):
 
 def test_group_slot_is_rejected_until_get_my_group_was_called(mailbox, groups):
     # No group saved for UL2XX002: Claude skipped get_my_group, so code refuses.
-    slot = exam(email_id="e7", course_code="UL2XX002", groups=["2"],
-                date={"day": 14, "month": 4, "year": None, "weekday": "tuesday", "relative": None},
-                start="10:45", end="11:45")
+    slot = exam(
+        email_id="e7",
+        course_code="UL2XX002",
+        groups=["2"],
+        date={"day": 14, "month": 4, "year": None, "weekday": "tuesday", "relative": None},
+        start="10:45",
+        end="11:45",
+    )
     with pytest.raises(ValueError, match="Call get_my_group first"):
         process_report([slot], mailbox, groups)
 

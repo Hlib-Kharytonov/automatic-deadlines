@@ -18,7 +18,11 @@ def _nullable(schema: dict) -> dict:
 
 
 def _hhmm(description: str) -> dict:
-    return {"type": "string", "description": f"{description} Format HH:MM, 24-hour: '16h30' -> '16:30', '14h' -> '14:00'."}
+    return {
+        "type": "string",
+        "description": f"{description} Format HH:MM, 24-hour: '16h30' -> '16:30', '14h' -> '14:00'.",
+    }
+
 
 _EXAM_SCHEMA = {
     "type": "object",
@@ -65,7 +69,10 @@ _EXAM_SCHEMA = {
         "start": _nullable(_hhmm("Start time; null if the email gives no precise time.")),
         "end": _nullable(_hhmm("End time, only if written.")),
         "duration_minutes": _nullable(
-            {"type": "integer", "description": "Only if a length is written instead of an end time ('durée 1h30' = 90)"}
+            {
+                "type": "integer",
+                "description": "Only if a length is written instead of an end time ('durée 1h30' = 90)",
+            }
         ),
         "groups": {
             "type": "array",
@@ -75,10 +82,21 @@ _EXAM_SCHEMA = {
                 "Report every group's slot, not only the student's; code keeps the right one."
             ),
         },
-        "quote": {"type": "string", "description": "The sentence that announces the exam, copied word for word"},
+        "quote": {
+            "type": "string",
+            "description": "The sentence that announces the exam, copied word for word",
+        },
     },
     "required": [
-        "email_id", "course_code", "exam_name", "date", "start", "end", "duration_minutes", "groups", "quote",
+        "email_id",
+        "course_code",
+        "exam_name",
+        "date",
+        "start",
+        "end",
+        "duration_minutes",
+        "groups",
+        "quote",
     ],
     "additionalProperties": False,
 }
